@@ -18,6 +18,10 @@ public class SavedItem {
 	}
 	
 	public static ItemStack fromString(String string) {
+		if (string.equals("null")) {
+			return null;
+		}
+		
 		final Map<String, String> arguments = new HashMap<>();
 		
 		final String[] argumentStrings = string.split(",");
@@ -71,6 +75,10 @@ public class SavedItem {
 	
 	@Override
 	public String toString() {
+		if (item == null) {
+			return "null";
+		}
+		
 		final ItemMeta meta = item.getItemMeta();
 		
 		final Material material = item.getType();
