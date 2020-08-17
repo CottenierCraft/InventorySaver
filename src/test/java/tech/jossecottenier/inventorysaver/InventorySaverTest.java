@@ -1,16 +1,20 @@
 package tech.jossecottenier.inventorysaver;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.junit.After;
 import org.junit.Before;
@@ -25,7 +29,11 @@ public class InventorySaverTest {
 	private ServerMock server;
 	private Main plugin;
 	
+	private InventorySaver inventorySaver;
 	private PlayerMock tester;
+	
+	private WorldMock controlledWorldMock;
+	private WorldMock notControlledWorldMock;
 	
 	private File worldInventoryFile;
 	private FileConfiguration configuration;
@@ -35,12 +43,15 @@ public class InventorySaverTest {
 		server = MockBukkit.mock();
 		plugin = (Main)MockBukkit.load(Main.class);
 		
-		final WorldMock worldMock = new WorldMock();
-		worldInventoryFile = new File(plugin.getDataFolder() + File.separator + worldMock.getName() + ".yml");
+		inventorySaver = new InventorySaver();
+		
+		controlledWorldMock = new WorldMock(Material.OAK_PLANKS, 5);
+		notControlledWorldMock = new WorldMock(Material.BIRCH_PLANKS, 5);
+		worldInventoryFile = new File(plugin.getDataFolder() + File.separator + controlledWorldMock.getName() + ".yml");
 		
 		try {
 			if (worldInventoryFile.createNewFile()) {
-				Bukkit.getLogger().info(worldMock.getName() + ".yml did not exist yet and has been created.");
+				Bukkit.getLogger().info(controlledWorldMock.getName() + ".yml did not exist yet and has been created.");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -51,11 +62,11 @@ public class InventorySaverTest {
 		tester = createRandomPlayer();
 		final PlayerMock[] players = new PlayerMock[] { createRandomPlayer(), createRandomPlayer() };
 		
-		ControlledWorlds.addWorld(worldMock);
+		ControlledWorlds.addWorld(controlledWorldMock);
 		
 		for (final PlayerMock player : players) {
 			server.addPlayer(player);
-			InventorySaver.saveInventory(player, plugin);
+			inventorySaver.saveInventory(player, plugin);
 		}
 	}
 	
@@ -64,18 +75,32 @@ public class InventorySaverTest {
 		MockBukkit.unmock();
 	}
 	
-	@Test
-	public void fileGetsCreated() {
-		assertTrue(worldInventoryFile.exists());
-	}
-	
 	private boolean entryCreated(PlayerMock playerMock) {
 		return configuration.getStringList(playerMock.getName()).size() > 0;
 	}
 	
+	private boolean serializedInventoryMatchesPlayers(PlayerMock player) {
+		final String serializationInfile = configuration.getString(player.getName());
+		final String serialization = inventorySaver.serializeInventory(player);
+		
+		return serializationInfile.equals(serialization);
+	}
+	
+	private Map<String,ItemStack[]> getLoadedInventoryAndLoadedSerialization(PlayerMock player) {
+		final Map<String,ItemStack[]> inventoryAndSerialization = new HashMap<>();
+		
+		final ItemStack[] playerInventoryContents = player.getInventory().getContents();
+		final ItemStack[] loadedSerialization = inventorySaver.loadInventoryContents(player, plugin);
+		
+		inventoryAndSerialization.put("inventory", playerInventoryContents);
+		inventoryAndSerialization.put("serialization", loadedSerialization);
+		
+		return inventoryAndSerialization;
+	}
+	
 	@Test
-	public void entryCreatedForFirstPlayer() {
-		assertTrue(entryCreated(tester));
+	public void fileGetsCreated() {
+		assertTrue(worldInventoryFile.exists());
 	}
 	
 	@Test
@@ -83,13 +108,6 @@ public class InventorySaverTest {
 		for (final PlayerMock playerMock : server.getOnlinePlayers()) {
 			assertTrue(entryCreated(playerMock));
 		}
-	}
-	
-	private boolean serializedInventoryMatchesPlayers(PlayerMock player) {
-		final List<String> serializationInfile = configuration.getStringList(player.getName());
-		final List<String> serialization = InventorySaver.serializeInventory(player);
-		
-		return serializationInfile.equals(serialization);
 	}
 	
 	@Test
@@ -105,10 +123,35 @@ public class InventorySaverTest {
 	}
 	
 	@Test
+	public void inventorySavedWhenLeavingControlledWorld() {
+		final PlayerTeleportEvent leaveEvent = new PlayerTeleportEvent(tester, controlledWorldMock.getSpawnLocation(), notControlledWorldMock.getSpawnLocation());
+		inventorySaver.onTeleport(leaveEvent, plugin);
+		
+		assertTrue(serializedInventoryMatchesPlayers(tester));
+	}
+	
+	@Test
+	public void inventorySavedWhenQuittingFromControlledWorld() {
+		final PlayerQuitEvent quitEvent = new PlayerQuitEvent(tester, null);
+		inventorySaver.onQuit(quitEvent, plugin);
+		
+		assertTrue(serializedInventoryMatchesPlayers(tester));
+	}
+	
+	@Test
+	public void inventoryLoadedWhenJoiningControlledWorld() {
+		final PlayerTeleportEvent joinEvent = new PlayerTeleportEvent(tester, notControlledWorldMock.getSpawnLocation(), controlledWorldMock.getSpawnLocation());
+		inventorySaver.onTeleport(joinEvent, plugin);
+		final Map<String,ItemStack[]> inventoryAndSerialization = getLoadedInventoryAndLoadedSerialization(tester);
+		
+		assertArrayEquals(inventoryAndSerialization.get("inventory"), inventoryAndSerialization.get("serialization"));
+	}
+	
+	@Test
 	public void serializationCanBeUpdatedOnCommand() {
 		final ItemStack[] newInventoryContents = createRandomInventoryContents();
 		tester.getInventory().setContents(newInventoryContents);
-		tester.performCommand("inventorsaver save");
+		tester.performCommand("inventory save");
 		
 		assertTrue(serializedInventoryMatchesPlayers(tester));
 	}
@@ -116,7 +159,7 @@ public class InventorySaverTest {
 	@Test
 	public void serializationCanBeLoadedOnCommand() {
 		tester.getInventory().clear();
-		tester.performCommand("inventorsaver load");
+		tester.performCommand("inventory load");
 		
 		assertTrue(serializedInventoryMatchesPlayers(tester));
 	}
