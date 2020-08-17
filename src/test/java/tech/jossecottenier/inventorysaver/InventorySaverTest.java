@@ -48,7 +48,7 @@ public class InventorySaverTest {
 		
 		worldInventoryFile = new File(plugin.getDataFolder() + File.separator + controlledWorldMock.getName() + ".yml");
 		
-		final PlayerMock[] players = new PlayerMock[] { createRandomPlayer(0), createRandomPlayer(1) };
+		final PlayerMock[] players = new PlayerMock[] { Randomizer.createRandomPlayer(server, 0), Randomizer.createRandomPlayer(server, 1) };
 		
 		ControlledWorlds.addWorld(controlledWorldMock);
 		
@@ -146,7 +146,7 @@ public class InventorySaverTest {
 	
 	@Test
 	public void serializationCanBeUpdatedOnCommand() {
-		final ItemStack[] newInventoryContents = createRandomInventoryContents();
+		final ItemStack[] newInventoryContents = Randomizer.createRandomInventoryContents();
 		firstPlayer.getInventory().setContents(newInventoryContents);
 		firstPlayer.performCommand("inventory save");
 		
@@ -159,32 +159,5 @@ public class InventorySaverTest {
 		firstPlayer.performCommand("inventory load");
 		
 		assertTrue(serializedInventoryMatchesPlayers(firstPlayer));
-	}
-	
-	private ItemStack[] createRandomInventoryContents() {
-		final ItemStack[] inventoryContents = new ItemStack[41];
-		final Random r = new Random();
-		
-		for (int i = 0; i < 41; i++) {
-			if (r.nextBoolean()) {
-				ItemStack item;
-				if (r.nextBoolean()) {
-					item = Randomizer.createRandomItemStack();
-				} else {
-					item = Randomizer.createRandomModifiedTool();
-				}
-				
-				inventoryContents[i] = item;
-			}
-		}
-		
-		return inventoryContents;
-	}
-	
-	private PlayerMock createRandomPlayer(int id) {
-		final PlayerMock player = new PlayerMock(server, "tester-" + id);
-		
-		player.getInventory().setContents(createRandomInventoryContents());
-		return player;
 	}
 }

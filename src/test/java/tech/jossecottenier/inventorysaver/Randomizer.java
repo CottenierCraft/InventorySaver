@@ -11,6 +11,9 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import be.seeseemelk.mockbukkit.ServerMock;
+import be.seeseemelk.mockbukkit.entity.PlayerMock;
+
 public class Randomizer {
 	private static final Random r = new Random();
 	
@@ -85,5 +88,32 @@ public class Randomizer {
 		tool.setItemMeta(meta);
 		
 		return tool;
+	}
+	
+	public static ItemStack[] createRandomInventoryContents() {
+		final ItemStack[] inventoryContents = new ItemStack[41];
+		final Random r = new Random();
+		
+		for (int i = 0; i < 41; i++) {
+			if (r.nextBoolean()) {
+				ItemStack item;
+				if (r.nextBoolean()) {
+					item = Randomizer.createRandomItemStack();
+				} else {
+					item = Randomizer.createRandomModifiedTool();
+				}
+				
+				inventoryContents[i] = item;
+			}
+		}
+		
+		return inventoryContents;
+	}
+	
+	public static PlayerMock createRandomPlayer(ServerMock server, int id) {
+		final PlayerMock player = new PlayerMock(server, "tester-" + id);
+		
+		player.getInventory().setContents(createRandomInventoryContents());
+		return player;
 	}
 }
