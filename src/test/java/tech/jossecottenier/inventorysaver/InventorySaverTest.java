@@ -60,10 +60,7 @@ public class InventorySaverTest {
 			}
 			
 			server.addPlayer(player);
-			inventorySaver.saveInventory(player, plugin);
 		}
-		
-		configuration = YamlConfiguration.loadConfiguration(worldInventoryFile);
 	}
 	
 	@After
@@ -90,31 +87,41 @@ public class InventorySaverTest {
 		return inventoryAndSerialization;
 	}
 	
+	private void saveInventoryAndUpdateConfiguration(PlayerMock player) {
+		inventorySaver.saveInventory(player);
+		configuration = YamlConfiguration.loadConfiguration(worldInventoryFile);
+	}
+	
 	@Test
 	public void fileGetsCreated() {
+		saveInventoryAndUpdateConfiguration(firstPlayer);
 		assertTrue(worldInventoryFile.exists());
 	}
 	
 	@Test
 	public void entryCreatedForFirstPlayer() {
+		saveInventoryAndUpdateConfiguration(firstPlayer);
 		assertNotNull(configuration.getString(firstPlayer.getName()));
 	}
 	
 	@Test
 	public void entryCreatedForAllPlayers() {
 		for (final PlayerMock playerMock : server.getOnlinePlayers()) {
+			saveInventoryAndUpdateConfiguration(playerMock);
 			assertNotNull(configuration.getString(playerMock.getName()));
 		}
 	}
 	
 	@Test
 	public void serializedInventoryIsCorrectForFirstPlayer() {
+		saveInventoryAndUpdateConfiguration(firstPlayer);
 		assertTrue(serializedInventoryMatchesPlayers(firstPlayer));
 	}
 	
 	@Test
 	public void serializedInventoryIsCorrectForAllPlayers() {
 		for (final PlayerMock playerMock : server.getOnlinePlayers()) {
+			saveInventoryAndUpdateConfiguration(playerMock);
 			assertTrue(serializedInventoryMatchesPlayers(playerMock));
 		}
 	}
