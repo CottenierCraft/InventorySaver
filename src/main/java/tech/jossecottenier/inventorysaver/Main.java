@@ -38,7 +38,10 @@ public class Main extends JavaPlugin {
 		this.getServer().getPluginManager().registerEvents(inventorySaver, this);
 		if (inventoryCommand != null) {
 			inventoryCommand.setExecutor(inventorySaver);
+			inventoryCommand.setTabCompleter(new TabComplete());
 		}
+		
+		ControlledWorlds.loadFromFile();
 	}
 	
 	public static File getConfigFile() {
