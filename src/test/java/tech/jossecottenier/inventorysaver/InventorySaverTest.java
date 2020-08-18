@@ -164,6 +164,7 @@ public class InventorySaverTest {
 	
 	@Test
 	public void serializationCanBeUpdatedOnCommand() {
+		// Randomize inventory and simulate command
 		final ItemStack[] newInventoryContents = Randomizer.createRandomInventoryContents();
 		firstPlayer.getInventory().setContents(newInventoryContents);
 		firstPlayer.performCommand("inventory save");
@@ -173,6 +174,7 @@ public class InventorySaverTest {
 	
 	@Test
 	public void serializationCanBeLoadedOnCommand() {
+		inventorySaver.saveInventory(firstPlayer, plugin);
 		firstPlayer.getInventory().clear();
 		firstPlayer.performCommand("inventory load");
 		
