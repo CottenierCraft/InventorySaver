@@ -23,7 +23,7 @@ Controlled worlds can also be updated dynamically via the API:
 ```java
 import tech.jossecottenier.inventorysaver.ControlledWorlds;
 
-ControlledWorlds.add(Bukkit.getWorld("AWorld")); // World will be controlled until it gets removed
+ControlledWorlds.addWorld(Bukkit.getWorld("AWorld")); // World will be controlled until it gets removed
 ```
 
 Furthermore, the `InventorySaver` methods can also be used from the outside, each of them contain documentation comments.
@@ -40,6 +40,6 @@ final ItemStack[] inventoryContents = inventorySaver.loadInventoryContents(seria
 
 ## Help and contributions
 
-This project is pretty much written on a holiday and is not meant to become popular in any means, but this naturally does not include your possibility of helping out and helping it reach its fullest potential. Therefore, pull requests are welcome and even encouraged, and I will always be happy to be contacted.
+This project is pretty much written on a holiday and is not meant to become popular in any means, but this naturally does not exclude your possibility of helping out and helping it reach its fullest potential. Therefore, pull requests are welcome and even encouraged, and I will always be happy to be contacted.
 
 - Josse
