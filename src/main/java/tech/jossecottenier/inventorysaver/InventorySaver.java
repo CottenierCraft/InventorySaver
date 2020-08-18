@@ -2,6 +2,9 @@ package tech.jossecottenier.inventorysaver;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+
+import org.bukkit.World;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -63,7 +66,7 @@ public class InventorySaver implements Listener {
 		}
 		
 		// Remove end minus sign
-		serialization = serialization.substring(0, serialization.length() - 2);
+		serialization = serialization.substring(0, serialization.length() - 1);
 		
 		return serialization;
 	}
@@ -133,7 +136,22 @@ public class InventorySaver implements Listener {
 	}
 	
 	protected void onTeleport(PlayerTeleportEvent event, JavaPlugin plugin) {
+		final Player player = event.getPlayer();
+		final World from = event.getFrom().getWorld();
+		final World to = event.getTo().getWorld();
 		
+		// From a controlled world to an uncontrolled world
+		if (ControlledWorlds.getWorlds().contains(from) && !ControlledWorlds.getWorlds().contains(to)) {
+			saveInventory(player, plugin);
+			return;
+		}
+		
+		// From an uncontrolled world to a controlled world
+		if (!ControlledWorlds.getWorlds().contains(from) && ControlledWorlds.getWorlds().contains(to)) {
+			final ItemStack[] contents = loadInventoryContents(player);
+			player.getInventory().setContents(contents);
+			return;
+		}
 	}
 	
 	@EventHandler
@@ -142,7 +160,9 @@ public class InventorySaver implements Listener {
 	}
 	
 	protected void onQuit(PlayerQuitEvent event, JavaPlugin plugin) {
-		
+		if (ControlledWorlds.getWorlds().contains(event.getPlayer().getWorld())) {
+			saveInventory(event.getPlayer(), plugin);
+		}
 	}
 	
 	@EventHandler
