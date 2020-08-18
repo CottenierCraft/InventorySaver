@@ -53,7 +53,6 @@ public class ControlledWorlds {
 	 * to the controlled worlds list.
 	 */
 	public static void loadFromFile() {
-		final File worldsFile = new File(Main.instance.getDataFolder() + File.separator + "worlds.yml");
-		loadFromFile(worldsFile, Main.instance.getServer());
+		loadFromFile(Main.getConfigFile(), Main.instance.getServer());
 	}
 }
