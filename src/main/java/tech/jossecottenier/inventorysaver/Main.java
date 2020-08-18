@@ -3,6 +3,7 @@ package tech.jossecottenier.inventorysaver;
 import java.io.File;
 import java.io.IOException;
 
+import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.JavaPluginLoader;
@@ -30,6 +31,13 @@ public class Main extends JavaPlugin {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+		}
+		
+		final InventorySaver inventorySaver = new InventorySaver();
+		final PluginCommand inventoryCommand = this.getCommand("inventory");
+		this.getServer().getPluginManager().registerEvents(inventorySaver, this);
+		if (inventoryCommand != null) {
+			inventoryCommand.setExecutor(inventorySaver);
 		}
 	}
 	
