@@ -30,8 +30,8 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * @param plugin Plugin in which namespace the file should be searched
 	 * @return Player's world's inventory file
 	 */
-	private File getWorldInventoryFile(Player player, JavaPlugin plugin) {
-		final File file = new File(plugin.getDataFolder() + File.separator + player.getWorld().getName() + ".yml");
+	private File getWorldInventoryFile(World world, JavaPlugin plugin) {
+		final File file = new File(plugin.getDataFolder() + File.separator + world.getName() + ".yml");
 		
 		try {
 			file.createNewFile();
@@ -50,8 +50,8 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * @param player Player whose world's inventory file to get
 	 * @return Player's world's inventory file
 	 */
-	private File getWorldInventoryFile(Player player) {
-		return getWorldInventoryFile(player, Main.instance);
+	private File getWorldInventoryFile(World world) {
+		return getWorldInventoryFile(world, Main.instance);
 	}
 	
 	/**
@@ -77,13 +77,17 @@ public class InventorySaver implements Listener,CommandExecutor {
 	
 	/**
 	 * Serializes a player's inventory to a string and saves
-	 * it to the player's world's inventory file in the specified
+	 * it to a specified world's inventory file in the specified
 	 * plugin's namespace
 	 * @param player Player whose inventory is to be saved
+	 * @param world The world to which inventory file the inventory should be saved.
 	 * @param plugin Plugin in which namespace the inventory file should go.
 	 */
-	protected void saveInventory(Player player, JavaPlugin plugin) {
-		final File file = getWorldInventoryFile(player);
+	protected void saveInventory(Player player, World world, JavaPlugin plugin) {
+		if (world == null) {
+			world = player.getWorld();
+		}
+		final File file = getWorldInventoryFile(world);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 		
 		configuration.set(player.getName(), serializeInventory(player));
@@ -96,25 +100,48 @@ public class InventorySaver implements Listener,CommandExecutor {
 	
 	/**
 	 * Serializes a player's inventory to a string and saves
-	 * it to the player's world's inventory file
-	 * 
-	 * @param player Player whose inventory is to be saved
+	 * it to the player's world's inventory file in the specified
+	 * plugin's namespace
+	 * @param player
+	 * @param plugin
 	 */
-	public void saveInventory(Player player) {
-		saveInventory(player, Main.instance);
+	protected void saveInventory(Player player, JavaPlugin plugin) {
+		saveInventory(player, player.getWorld(), plugin);
 	}
 	
 	/**
-	 * Loads the serialized inventory of the player's world's
+	 * Serializes a player's inventory to a string and saves
+	 * it to a specified world's inventory file
+	 * 
+	 * @param player Player whose inventory is to be saved
+	 * @param world World to which inventory file the player's inventory should be saved.
+	 */
+	public void saveInventory(Player player, World world) {
+		saveInventory(player, world, Main.instance);
+	}
+	
+	/**
+	 * Serializes a player's inventory to a string and saves
+	 * it to the player's world's inventory file
+	 * 
+	 * @param player
+	 */
+	public void saveInventory(Player player) {
+		saveInventory(player, player.getWorld());
+	}
+	
+	/**
+	 * Loads the serialized inventory of a specified world's
 	 * inventory file saved in a specified plugin's namespace
 	 * to an ItemStack array.
 	 * 
 	 * @param player Player whose saved inventory is to be loaded.
+	 * @param world The world from which inventory file the inventory should be loaded.
 	 * @param plugin Plugin in which namespace the inventory file is saved.
 	 * @return ItemStack array with the loaded inventory contents.
 	 */
-	protected ItemStack[] loadInventoryContents(Player player, JavaPlugin plugin) {
-		final File file = getWorldInventoryFile(player, plugin);
+	protected ItemStack[] loadInventoryContents(Player player, World world, JavaPlugin plugin) {
+		final File file = getWorldInventoryFile(world, plugin);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 		final String serialization = configuration.getString(player.getName());
 		final String[] serializedItems = serialization.split("-");
@@ -128,6 +155,32 @@ public class InventorySaver implements Listener,CommandExecutor {
 	}
 	
 	/**
+	 * Loads the serialized inventory of a specified world's
+	 * inventory file saved in the InventorySaver plugin's namespace
+	 * to an ItemStack array
+	 * 
+	 * @param player Player whose saved inventory is to be loaded
+	 * @param world The world from which inventory file the inventory should be loaded.
+	 * @return
+	 */
+	public ItemStack[] loadInventoryContents(Player player, World world) {
+		return loadInventoryContents(player, world, Main.instance);
+	}
+	
+	/**
+	 * Loads the serialized inventory of the player's world's
+	 * inventory file saved in a specified plugin's namespace
+	 * to an ItemStack array.
+	 * 
+	 * @param player Player whose saved inventory is to be loaded.
+	 * @param plugin Plugin in which namespace the inventory file is saved.
+	 * @return ItemStack array with the loaded inventory contents.
+	 */
+	protected ItemStack[] loadInventoryContents(Player player, JavaPlugin plugin) {
+		return loadInventoryContents(player, player.getWorld(), plugin);
+	}
+	
+	/**
 	 * Loads the serialized inventory of the player's world's
 	 * inventory file saved in the InventorySaver plugin's namespace
 	 * to an ItemStack array
@@ -136,7 +189,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * @return
 	 */
 	public ItemStack[] loadInventoryContents(Player player) {
-		return loadInventoryContents(player, Main.instance);
+		return loadInventoryContents(player, player.getWorld());
 	}
 	
 	protected void onTeleport(PlayerTeleportEvent event, JavaPlugin plugin) {
@@ -152,7 +205,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 		
 		// From an uncontrolled world to a controlled world
 		if (!ControlledWorlds.getWorlds().contains(from) && ControlledWorlds.getWorlds().contains(to)) {
-			final ItemStack[] contents = loadInventoryContents(player);
+			final ItemStack[] contents = loadInventoryContents(player, to);
 			player.getInventory().setContents(contents);
 			return;
 		}
