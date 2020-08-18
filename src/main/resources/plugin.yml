@@ -1,3 +1,6 @@
 main: tech.jossecottenier.inventorysaver.Main
 name: InventorySaver
 version: 0.0.1
+
+commands:
+  inventory:

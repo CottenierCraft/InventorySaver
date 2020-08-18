@@ -2,9 +2,11 @@ package tech.jossecottenier.inventorysaver;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 
 import org.bukkit.World;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
@@ -15,7 +17,9 @@ import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-public class InventorySaver implements Listener {
+import net.md_5.bungee.api.ChatColor;
+
+public class InventorySaver implements Listener,CommandExecutor {
 	
 	/**
 	 * Gets the inventory file in a specified plugin namespace
@@ -168,5 +172,34 @@ public class InventorySaver implements Listener {
 	@EventHandler
 	public void onQuit(PlayerQuitEvent event) {
 		onQuit(event, Main.instance);
+	}
+	
+	public boolean onCommand(CommandSender sender, Command cmd, String label, String[] args) {
+		if (!label.equalsIgnoreCase("inventory")) {
+			return false;
+		}
+		
+		if (!(sender instanceof Player)) {
+			sender.sendMessage(ChatColor.RED + "This command is to be executed by players.");
+			return false;
+		}
+		
+		if (args.length != 1) {
+			return false;
+		}
+		
+		final Player player = (Player)sender;
+		final String instruction = args[0];
+		
+		switch (instruction) {
+			case "save":
+				saveInventory(player);
+				break;
+			case "load":
+				player.getInventory().setContents(loadInventoryContents(player));
+				break;
+		}
+		
+		return true;
 	}
 }
