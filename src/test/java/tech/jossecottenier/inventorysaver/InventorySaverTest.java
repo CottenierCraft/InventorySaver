@@ -7,7 +7,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
@@ -68,11 +67,22 @@ public class InventorySaverTest {
 		MockBukkit.unmock();
 	}
 	
+	private String createdEntry(PlayerMock player) {
+		// Update configuration file
+		configuration = YamlConfiguration.loadConfiguration(worldInventoryFile);
+		
+		return configuration.getString(player.getName());
+	}
+	
 	private boolean serializedInventoryMatchesPlayers(PlayerMock player) {
+		// Update configuration file
+		configuration = YamlConfiguration.loadConfiguration(worldInventoryFile);
+		
 		final String serializationInFile = configuration.getString(player.getName());
 		final String serialization = inventorySaver.serializeInventory(player);
 		
-		return serializationInFile.equals(serialization);
+		// "serialization" should go first as "serializationInFile" is nullable
+		return serialization.equals(serializationInFile);
 	}
 	
 	private Map<String,ItemStack[]> getLoadedInventoryAndLoadedSerialization(PlayerMock player) {
@@ -87,41 +97,36 @@ public class InventorySaverTest {
 		return inventoryAndSerialization;
 	}
 	
-	private void saveInventoryAndUpdateConfiguration(PlayerMock player) {
-		inventorySaver.saveInventory(player);
-		configuration = YamlConfiguration.loadConfiguration(worldInventoryFile);
-	}
-	
 	@Test
 	public void fileGetsCreated() {
-		saveInventoryAndUpdateConfiguration(firstPlayer);
+		inventorySaver.saveInventory(firstPlayer);
 		assertTrue(worldInventoryFile.exists());
 	}
 	
 	@Test
 	public void entryCreatedForFirstPlayer() {
-		saveInventoryAndUpdateConfiguration(firstPlayer);
-		assertNotNull(configuration.getString(firstPlayer.getName()));
+		inventorySaver.saveInventory(firstPlayer);
+		assertNotNull(createdEntry(firstPlayer));
 	}
 	
 	@Test
 	public void entryCreatedForAllPlayers() {
 		for (final PlayerMock playerMock : server.getOnlinePlayers()) {
-			saveInventoryAndUpdateConfiguration(playerMock);
-			assertNotNull(configuration.getString(playerMock.getName()));
+			inventorySaver.saveInventory(playerMock);
+			assertNotNull(createdEntry(playerMock));
 		}
 	}
 	
 	@Test
 	public void serializedInventoryIsCorrectForFirstPlayer() {
-		saveInventoryAndUpdateConfiguration(firstPlayer);
+		inventorySaver.saveInventory(firstPlayer);
 		assertTrue(serializedInventoryMatchesPlayers(firstPlayer));
 	}
 	
 	@Test
 	public void serializedInventoryIsCorrectForAllPlayers() {
 		for (final PlayerMock playerMock : server.getOnlinePlayers()) {
-			saveInventoryAndUpdateConfiguration(playerMock);
+			inventorySaver.saveInventory(playerMock);
 			assertTrue(serializedInventoryMatchesPlayers(playerMock));
 		}
 	}
@@ -136,6 +141,8 @@ public class InventorySaverTest {
 	
 	@Test
 	public void inventorySavedWhenQuittingFromControlledWorld() {
+		// Simulating event of quitting from a controlled world
+		firstPlayer.teleport(controlledWorldMock.getSpawnLocation());
 		final PlayerQuitEvent quitEvent = new PlayerQuitEvent(firstPlayer, null);
 		inventorySaver.onQuit(quitEvent, plugin);
 		
@@ -144,6 +151,10 @@ public class InventorySaverTest {
 	
 	@Test
 	public void inventoryLoadedWhenJoiningControlledWorld() {
+		// Save inventory and clear
+		inventorySaver.saveInventory(firstPlayer, plugin);
+		firstPlayer.getInventory().clear();
+		
 		final PlayerTeleportEvent joinEvent = new PlayerTeleportEvent(firstPlayer, notControlledWorldMock.getSpawnLocation(), controlledWorldMock.getSpawnLocation());
 		inventorySaver.onTeleport(joinEvent, plugin);
 		final Map<String,ItemStack[]> inventoryAndSerialization = getLoadedInventoryAndLoadedSerialization(firstPlayer);
