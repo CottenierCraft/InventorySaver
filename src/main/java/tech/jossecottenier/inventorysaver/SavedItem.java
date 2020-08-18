@@ -25,7 +25,7 @@ public class SavedItem {
 	 * @return Deserialized item
 	 */
 	public static ItemStack deserialize(String string) {
-		if (string.equals("null")) {
+		if (string.equals("")) {
 			return null;
 		}
 		
@@ -89,7 +89,7 @@ public class SavedItem {
 	 */
 	public String serialize() {
 		if (item == null) {
-			return "null";
+			return "";
 		}
 		
 		final ItemMeta meta = item.getItemMeta();
