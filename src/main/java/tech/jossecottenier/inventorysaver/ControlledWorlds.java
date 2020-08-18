@@ -34,6 +34,17 @@ public class ControlledWorlds {
 	}
 	
 	/**
+	 * Tries to remove a world from the controlled worlds
+	 * and returns whether it was in the list or not
+	 * 
+	 * @param world World to be removed
+	 * @return Whether the world was in the list or not
+	 */
+	public static boolean removeWorld(World world) {
+		return worlds.remove(world);
+	}
+	
+	/**
 	 * Adds worlds saved on a specified server listed in a 
 	 * specified YML file to the controlled worlds list.
 	 * 

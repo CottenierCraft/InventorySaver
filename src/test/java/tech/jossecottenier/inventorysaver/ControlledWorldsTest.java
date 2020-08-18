@@ -1,5 +1,6 @@
 package tech.jossecottenier.inventorysaver;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 import java.io.File;
@@ -68,6 +69,15 @@ public class ControlledWorldsTest {
 		
 		ControlledWorlds.addWorld(worldMock);
 		assertTrue(ControlledWorlds.getWorlds().contains(worldMock));
+	}
+	
+	@Test
+	public void worldGetsRemovedViaMethod() {
+		final WorldMock worldMock = new WorldMock();
+		ControlledWorlds.addWorld(worldMock);
+		
+		ControlledWorlds.removeWorld(worldMock);
+		assertFalse(ControlledWorlds.getWorlds().contains(worldMock));
 	}
 	
 	@Test
