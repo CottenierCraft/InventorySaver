@@ -28,9 +28,9 @@ public class SavedItemTest {
 	}
 	
 	private boolean fromSerializationEqualsItem(ItemStack item) {
-		final String serializedItem = new SavedItem(item).toString();
+		final String serializedItem = new SavedItem(item).serialize();
 		
-		return SavedItem.fromString(serializedItem).equals(item);
+		return SavedItem.deserialize(serializedItem).equals(item);
 	}
 	
 	@Test

@@ -17,7 +17,14 @@ public class SavedItem {
 		this.item = item;
 	}
 	
-	public static ItemStack fromString(String string) {
+	/**
+	 * Constructs an ItemStack out of a serialized
+	 * item string.
+	 * 
+	 * @param string Serialized item string
+	 * @return Deserialized item
+	 */
+	public static ItemStack deserialize(String string) {
 		if (string.equals("null")) {
 			return null;
 		}
@@ -73,8 +80,14 @@ public class SavedItem {
 		return constructedItemStack;
 	}
 	
-	@Override
-	public String toString() {
+	/**
+	 * Serializes the ItemStack passed in its
+	 * constructor to an item string which can
+	 * be saved.
+	 * 
+	 * @return The serialized item string.
+	 */
+	public String serialize() {
 		if (item == null) {
 			return "null";
 		}
@@ -99,5 +112,10 @@ public class SavedItem {
 		}
 		
 		return String.format("m=%s,a=%d,n=%s,d=%d,e=%s", material.name(), amount, displayName, damage, enchantmentsString);
+	}
+	
+	@Override
+	public String toString() {
+		return item.toString();
 	}
 }

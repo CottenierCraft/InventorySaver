@@ -14,6 +14,15 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 public class InventorySaver implements Listener {
 	
+	/**
+	 * Gets the inventory file in a specified plugin namespace
+	 * from the players world, in which the serialized player 
+	 * inventories of that world are stored.
+	 * 
+	 * @param player Player whose world's inventory file to get
+	 * @param plugin Plugin in which namespace the file should be searched
+	 * @return Player's world's inventory file
+	 */
 	private File getWorldInventoryFile(Player player, JavaPlugin plugin) {
 		final File file = new File(plugin.getDataFolder() + File.separator + player.getWorld().getName() + ".yml");
 		
@@ -26,12 +35,31 @@ public class InventorySaver implements Listener {
 		return file;
 	}
 	
+	/**
+	 * Gets the inventory file from the players world, 
+	 * in which the serialized player 
+	 * inventories of that world are stored.
+	 * 
+	 * @param player Player whose world's inventory file to get
+	 * @return Player's world's inventory file
+	 */
+	private File getWorldInventoryFile(Player player) {
+		return getWorldInventoryFile(player, Main.instance);
+	}
+	
+	/**
+	 * Serializes a specified player's inventory
+	 * to a efficiently storable string.
+	 * 
+	 * @param player Player whose inventory to serialize
+	 * @return Serialized string of the player's inventory
+	 */
 	public String serializeInventory(Player player) {
 		String serialization = "";
 		final ItemStack[] inventoryContents = player.getInventory().getContents();
 		
 		for (ItemStack item : inventoryContents) {
-			serialization += new SavedItem(item).toString() + "-";
+			serialization += new SavedItem(item).serialize() + "-";
 		}
 		
 		// Remove end minus sign
@@ -40,8 +68,15 @@ public class InventorySaver implements Listener {
 		return serialization;
 	}
 	
+	/**
+	 * Serializes a player's inventory to a string and saves
+	 * it to the player's world's inventory file in the specified
+	 * plugin's namespace
+	 * @param player Player whose inventory is to be saved
+	 * @param plugin Plugin in which namespace the inventory file should go.
+	 */
 	protected void saveInventory(Player player, JavaPlugin plugin) {
-		final File file = getWorldInventoryFile(player, plugin);
+		final File file = getWorldInventoryFile(player);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 		
 		configuration.set(player.getName(), serializeInventory(player));
@@ -52,10 +87,25 @@ public class InventorySaver implements Listener {
 		}
 	}
 	
+	/**
+	 * Serializes a player's inventory to a string and saves
+	 * it to the player's world's inventory file
+	 * 
+	 * @param player Player whose inventory is to be saved
+	 */
 	public void saveInventory(Player player) {
 		saveInventory(player, Main.instance);
 	}
 	
+	/**
+	 * Loads the serialized inventory of the player's world's
+	 * inventory file saved in a specified plugin's namespace
+	 * to an ItemStack array.
+	 * 
+	 * @param player Player whose saved inventory is to be loaded.
+	 * @param plugin Plugin in which namespace the inventory file is saved.
+	 * @return ItemStack array with the loaded inventory contents.
+	 */
 	protected ItemStack[] loadInventoryContents(Player player, JavaPlugin plugin) {
 		final File file = getWorldInventoryFile(player, plugin);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
@@ -64,12 +114,20 @@ public class InventorySaver implements Listener {
 		final ItemStack[] inventoryContents = new ItemStack[serializedItems.length];
 		
 		for (int i = 0; i < serializedItems.length; i++) {
-			inventoryContents[i] = SavedItem.fromString(serializedItems[i]);
+			inventoryContents[i] = SavedItem.deserialize(serializedItems[i]);
 		}
 		
 		return inventoryContents;
 	}
 	
+	/**
+	 * Loads the serialized inventory of the player's world's
+	 * inventory file saved in the InventorySaver plugin's namespace
+	 * to an ItemStack array
+	 * 
+	 * @param player Player whose saved inventory is to be loaded
+	 * @return
+	 */
 	public ItemStack[] loadInventoryContents(Player player) {
 		return loadInventoryContents(player, Main.instance);
 	}
