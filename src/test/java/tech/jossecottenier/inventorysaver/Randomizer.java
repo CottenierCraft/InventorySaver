@@ -21,8 +21,8 @@ public class Randomizer {
 		final Material[] materials = Material.values();
 		final Material material = materials[r.nextInt(materials.length)];
 		
-		// Filter out legacy items as MockBukkit throws an exception on those
-		if (material.name().contains("LEGACY")) {
+		// Filter out legacy items as MockBukkit throws an exception on those and air
+		if (material.name().contains("LEGACY") || material == Material.AIR) {
 			return createRandomMaterial();
 		}
 		
