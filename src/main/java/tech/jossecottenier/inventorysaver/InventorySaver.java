@@ -14,6 +14,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -55,15 +56,15 @@ public class InventorySaver implements Listener,CommandExecutor {
 	}
 	
 	/**
-	 * Serializes a specified player's inventory
+	 * Serializes a specified inventory
 	 * to a efficiently storable string.
 	 * 
-	 * @param player Player whose inventory to serialize
+	 * @param inventory Inventory which should be serialized
 	 * @return Serialized string of the player's inventory
 	 */
-	public String serializeInventory(Player player) {
+	public String serializeInventory(Inventory inventory) {
 		String serialization = "";
-		final ItemStack[] inventoryContents = player.getInventory().getContents();
+		final ItemStack[] inventoryContents = inventory.getContents();
 		
 		for (ItemStack item : inventoryContents) {
 			serialization += new SavedItem(item).serialize() + "-";
@@ -90,7 +91,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 		final File file = getWorldInventoryFile(world);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 		
-		configuration.set(player.getName(), serializeInventory(player));
+		configuration.set(player.getName(), serializeInventory(player.getInventory()));
 		try {
 			configuration.save(file);
 		} catch (IOException e) {
@@ -131,6 +132,25 @@ public class InventorySaver implements Listener,CommandExecutor {
 	}
 	
 	/**
+	 * Deserializes a serialization string
+	 * to an ItemStack array containing the
+	 * inventory contents.
+	 * 
+	 * @param serialization The serialization string
+	 * @return ItemStack array with inventory contents
+	 */
+	public ItemStack[] deserializeInventory(String serialization) {
+		final String[] serializedItems = serialization.split("-");
+		final ItemStack[] inventoryContents = new ItemStack[serializedItems.length];
+		
+		for (int i = 0; i < serializedItems.length; i++) {
+			inventoryContents[i] = SavedItem.deserialize(serializedItems[i]);
+		}
+		
+		return inventoryContents;
+	}
+	
+	/**
 	 * Loads the serialized inventory of a specified world's
 	 * inventory file saved in a specified plugin's namespace
 	 * to an ItemStack array.
@@ -143,15 +163,8 @@ public class InventorySaver implements Listener,CommandExecutor {
 	protected ItemStack[] loadInventoryContents(Player player, World world, JavaPlugin plugin) {
 		final File file = getWorldInventoryFile(world, plugin);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
-		final String serialization = configuration.getString(player.getName());
-		final String[] serializedItems = serialization.split("-");
-		final ItemStack[] inventoryContents = new ItemStack[serializedItems.length];
 		
-		for (int i = 0; i < serializedItems.length; i++) {
-			inventoryContents[i] = SavedItem.deserialize(serializedItems[i]);
-		}
-		
-		return inventoryContents;
+		return deserializeInventory(configuration.getString(player.getName()));
 	}
 	
 	/**

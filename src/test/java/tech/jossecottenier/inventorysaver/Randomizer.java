@@ -7,6 +7,7 @@ import java.util.Random;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -90,11 +91,19 @@ public class Randomizer {
 		return tool;
 	}
 	
-	public static ItemStack[] createRandomInventoryContents() {
-		final ItemStack[] inventoryContents = new ItemStack[41];
+	public static Inventory createRandomInventory() {
+		final int size = (r.nextInt(6) + 1) * 9;
+		final Inventory inventory = Bukkit.createInventory(null, size);
+		inventory.setContents(createRandomInventoryContents(size));
+		
+		return inventory;
+	}
+	
+	public static ItemStack[] createRandomInventoryContents(int size) {
+		final ItemStack[] inventoryContents = new ItemStack[size];
 		final Random r = new Random();
 		
-		for (int i = 0; i < 41; i++) {
+		for (int i = 0; i < size; i++) {
 			if (r.nextBoolean()) {
 				ItemStack item;
 				if (r.nextBoolean()) {
@@ -108,6 +117,10 @@ public class Randomizer {
 		}
 		
 		return inventoryContents;
+	}
+	
+	public static ItemStack[] createRandomInventoryContents() {
+		return createRandomInventoryContents(41);
 	}
 	
 	public static PlayerMock createRandomPlayer(ServerMock server, int id) {

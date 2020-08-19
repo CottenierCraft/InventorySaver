@@ -7,11 +7,13 @@ import static org.junit.Assert.assertTrue;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.After;
 import org.junit.Before;
@@ -79,10 +81,21 @@ public class InventorySaverTest {
 		configuration = YamlConfiguration.loadConfiguration(worldInventoryFile);
 		
 		final String serializationInFile = configuration.getString(player.getName());
-		final String serialization = inventorySaver.serializeInventory(player);
+		final String serialization = inventorySaver.serializeInventory(player.getInventory());
 		
 		// "serialization" should go first as "serializationInFile" is nullable
 		return serialization.equals(serializationInFile);
+	}
+	
+	// Append "null" at the end of an ItemStack array to match lengths
+	// (This will in practice never be necessary but is needed here to compare the arrays)
+	private ItemStack[] appendNullToMatchLength(ItemStack[] original, int length) {
+		final ItemStack[] originalWithCorrectLength = new ItemStack[length];
+		for (int i = 0; i < length; i++) {
+			originalWithCorrectLength[i] = original[i];
+		}
+		
+		return originalWithCorrectLength;
 	}
 	
 	private Map<String,ItemStack[]> getLoadedInventoryAndLoadedSerialization(PlayerMock player) {
@@ -132,6 +145,17 @@ public class InventorySaverTest {
 	}
 	
 	@Test
+	public void correctlyReconstructsGeneralInventories() {
+		final Inventory inventory = Randomizer.createRandomInventory();
+		final String serialization = inventorySaver.serializeInventory(inventory);
+		
+		final ItemStack[] deserialization = inventorySaver.deserializeInventory(serialization);
+		final ItemStack[] inventoryContents = inventory.getContents();
+		
+		assertArrayEquals(inventoryContents, appendNullToMatchLength(deserialization, inventoryContents.length));
+	}
+	
+	@Test
 	public void inventorySavedWhenLeavingControlledWorld() {
 		final PlayerTeleportEvent leaveEvent = new PlayerTeleportEvent(firstPlayer, controlledWorldMock.getSpawnLocation(), notControlledWorldMock.getSpawnLocation());
 		inventorySaver.onTeleport(leaveEvent, plugin);
@@ -159,7 +183,10 @@ public class InventorySaverTest {
 		inventorySaver.onTeleport(joinEvent, plugin);
 		final Map<String,ItemStack[]> inventoryAndSerialization = getLoadedInventoryAndLoadedSerialization(firstPlayer);
 		
-		assertArrayEquals(inventoryAndSerialization.get("inventory"), inventoryAndSerialization.get("serialization"));
+		final ItemStack[] inventoryContents = inventoryAndSerialization.get("inventory");
+		final ItemStack[] deserializedContents = inventoryAndSerialization.get("serialization");
+		
+		assertArrayEquals(inventoryContents, appendNullToMatchLength(deserializedContents, inventoryContents.length));
 	}
 	
 	@Test
