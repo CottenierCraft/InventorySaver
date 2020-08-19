@@ -93,6 +93,7 @@ public class SavedItemTest {
 		assertTrue(fromSerializationEqualsItem(item));
 	}
 	
+	@Test
 	public void reconstructsCompletelyRandomizedItemWithoutEnchantments() {
 		final ItemStack item = new ItemStack(Randomizer.createRandomTool());
 		final ItemMeta meta = item.getItemMeta();
