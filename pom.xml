@@ -2,7 +2,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>tech.jossecottenier</groupId>
   <artifactId>inventorysaver</artifactId>
-  <version>0.1.1-SNAPSHOT</version>
+  <version>0.2.0-SNAPSHOT</version>
   <name>InventorySaver</name>
   <properties>
   	<maven.compiler.source>1.8</maven.compiler.source>

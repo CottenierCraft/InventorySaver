@@ -12,6 +12,8 @@ public class Main extends JavaPlugin {
 	public static Main instance;
 	private static File configFile;
 	
+	private InventorySaver inventorySaver;
+	
 	public Main() {
 		super();
 	}
@@ -33,9 +35,10 @@ public class Main extends JavaPlugin {
 			e.printStackTrace();
 		}
 		
-		final InventorySaver inventorySaver = new InventorySaver();
+		inventorySaver = new InventorySaver();
 		final PluginCommand inventoryCommand = this.getCommand("inventory");
 		this.getServer().getPluginManager().registerEvents(inventorySaver, this);
+		
 		if (inventoryCommand != null) {
 			inventoryCommand.setExecutor(inventorySaver);
 			inventoryCommand.setTabCompleter(new TabComplete());
@@ -46,5 +49,27 @@ public class Main extends JavaPlugin {
 	
 	public static File getConfigFile() {
 		return configFile;
+	}
+	
+	/**
+	 * Sets the default inventory saver
+	 * which loads/saves inventories
+	 * when players join/leave worlds
+	 * listed in the config.yml
+	 */
+	protected InventorySaver getDefaultInventorySaver() {
+		return inventorySaver;
+	}
+	
+	/**
+	 * Sets the default inventory saver
+	 * which loads/saves inventories
+	 * when players join/leave worlds
+	 * listed in the config.yml
+	 * 
+	 * @param inventorySaver New inventory saver which will load/save from now on
+	 */
+	protected void setDefaultInventorySaver(InventorySaver inventorySaver) {
+		this.inventorySaver = inventorySaver;
 	}
 }

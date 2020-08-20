@@ -27,10 +27,14 @@ public class SavedItemTest {
 		MockBukkit.unmock();
 	}
 	
-	private boolean fromSerializationEqualsItem(ItemStack item) {
+	private boolean fromSerializationEqualsItem(ItemStack item, InventorySaver inventorySaver) {
 		final String serializedItem = new SavedItem(item).serialize();
 		
-		return SavedItem.deserialize(serializedItem).equals(item);
+		return SavedItem.deserialize(serializedItem, inventorySaver).equals(item);
+	}
+	
+	private boolean fromSerializationEqualsItem(ItemStack item) {
+		return fromSerializationEqualsItem(item, null);
 	}
 	
 	@Test
@@ -104,5 +108,14 @@ public class SavedItemTest {
 		item.setItemMeta(meta);
 		
 		assertTrue(fromSerializationEqualsItem(item));
+	}
+	
+	@Test
+	public void reconstructsCustomItem() {
+		final ItemStack customItem = Randomizer.createRandomCustomItem();
+		final InventorySaver inventorySaver = new InventorySaver();
+		inventorySaver.addCustomItem(customItem);
+		
+		assertTrue(fromSerializationEqualsItem(customItem, inventorySaver));
 	}
 }

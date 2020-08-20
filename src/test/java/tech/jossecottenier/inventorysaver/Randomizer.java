@@ -1,10 +1,13 @@
 package tech.jossecottenier.inventorysaver;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.enchantments.Enchantment;
 import org.bukkit.inventory.Inventory;
@@ -91,6 +94,26 @@ public class Randomizer {
 		return tool;
 	}
 	
+	public static ItemStack createRandomCustomItem() {
+		final ItemStack customItem = new ItemStack(createRandomMaterial());
+		final ItemMeta meta = customItem.getItemMeta();
+		
+		final ChatColor[] chatColors = ChatColor.values();
+		final String displayName = chatColors[r.nextInt(chatColors.length)] + createRandomDisplayName();
+		final int loreLength = r.nextInt(5) + 1;
+		final List<String> lore = new ArrayList<>();
+		
+		for (int i = 0; i < loreLength; i++) {
+			lore.add(chatColors[r.nextInt(chatColors.length)] + createRandomDisplayName());
+		}
+		
+		meta.setDisplayName(displayName);
+		meta.setLore(lore);
+		customItem.setItemMeta(meta);
+		
+		return customItem;
+	}
+	
 	public static Inventory createRandomInventory() {
 		final int size = (r.nextInt(6) + 1) * 9;
 		final Inventory inventory = Bukkit.createInventory(null, size);
@@ -121,6 +144,17 @@ public class Randomizer {
 	
 	public static ItemStack[] createRandomInventoryContents() {
 		return createRandomInventoryContents(41);
+	}
+	
+	public static ItemStack[] createRandomInventoryContentsIncluding(ItemStack item, int size) {
+		final ItemStack[] inventoryContents = createRandomInventoryContents(size);
+		inventoryContents[r.nextInt(inventoryContents.length)] = item;
+		
+		return inventoryContents;
+	}
+	
+	public static ItemStack[] createRandomInventoryContentsIncluding(ItemStack item) {
+		return createRandomInventoryContentsIncluding(item, 41);
 	}
 	
 	public static PlayerMock createRandomPlayer(ServerMock server, int id) {

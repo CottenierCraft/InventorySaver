@@ -1,6 +1,7 @@
 package tech.jossecottenier.inventorysaver;
 
 import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -11,6 +12,7 @@ import java.util.Map;
 import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.craftbukkit.libs.org.apache.commons.lang3.ArrayUtils;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
@@ -91,7 +93,7 @@ public class InventorySaverTest {
 	// (This will in practice never be necessary but is needed here to compare the arrays)
 	private ItemStack[] appendNullToMatchLength(ItemStack[] original, int length) {
 		final ItemStack[] originalWithCorrectLength = new ItemStack[length];
-		for (int i = 0; i < length; i++) {
+		for (int i = 0; i < original.length; i++) {
 			originalWithCorrectLength[i] = original[i];
 		}
 		
@@ -156,6 +158,29 @@ public class InventorySaverTest {
 	}
 	
 	@Test
+	public void correctlyLoadsCustomItem() {
+		final ItemStack customItem = Randomizer.createRandomCustomItem();
+		inventorySaver.addCustomItem(customItem);
+		
+		final Inventory inventory = Randomizer.createRandomInventory();
+		final ItemStack[] playerInventoryContents = Randomizer.createRandomInventoryContentsIncluding(customItem, inventory.getSize());
+		inventory.setContents(playerInventoryContents);
+		
+		final ItemStack[] reconstructedContents = inventorySaver.deserializeInventory(inventorySaver.serializeInventory(inventory));
+		
+		assertTrue(ArrayUtils.contains(reconstructedContents, customItem));
+	}
+	
+	@Test
+	public void inventorySaverGetsUpdatedViaMethod() {
+		final InventorySaver newInventorySaver = new InventorySaver();
+		newInventorySaver.addCustomItem(Randomizer.createRandomCustomItem());
+		InventorySaver.setDefaultInventorySaver(newInventorySaver, plugin);
+		
+		assertEquals(plugin.getDefaultInventorySaver(), newInventorySaver);
+	}
+	
+	@Test
 	public void inventorySavedWhenLeavingControlledWorld() {
 		final PlayerTeleportEvent leaveEvent = new PlayerTeleportEvent(firstPlayer, controlledWorldMock.getSpawnLocation(), notControlledWorldMock.getSpawnLocation());
 		inventorySaver.onTeleport(leaveEvent, plugin);
@@ -187,6 +212,25 @@ public class InventorySaverTest {
 		final ItemStack[] deserializedContents = inventoryAndSerialization.get("serialization");
 		
 		assertArrayEquals(inventoryContents, appendNullToMatchLength(deserializedContents, inventoryContents.length));
+	}
+	
+	@Test
+	public void customItemsGetLoadedWhenJoiningControlledWorldAfterUpdatingInventorySaver() {
+		final ItemStack customItem = Randomizer.createRandomCustomItem();
+		final ItemStack[] inventoryContents = Randomizer.createRandomInventoryContentsIncluding(customItem);
+		firstPlayer.getInventory().setContents(inventoryContents);
+		inventorySaver.saveInventory(firstPlayer, plugin);
+		firstPlayer.getInventory().clear();
+		
+		final InventorySaver newInventorySaver = new InventorySaver();
+		newInventorySaver.addCustomItem(customItem);
+		InventorySaver.setDefaultInventorySaver(newInventorySaver);
+		
+		final PlayerTeleportEvent joinEvent = new PlayerTeleportEvent(firstPlayer, notControlledWorldMock.getSpawnLocation(), controlledWorldMock.getSpawnLocation());
+		inventorySaver.onTeleport(joinEvent, plugin);
+		final ItemStack[] loadedInventoryContents = firstPlayer.getInventory().getContents();
+		
+		assertArrayEquals(loadedInventoryContents, appendNullToMatchLength(inventoryContents, loadedInventoryContents.length));
 	}
 	
 	@Test

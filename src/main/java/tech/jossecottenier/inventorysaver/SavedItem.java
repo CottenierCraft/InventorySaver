@@ -18,13 +18,15 @@ public class SavedItem {
 	}
 	
 	/**
-	 * Constructs an ItemStack out of a serialized
-	 * item string.
+	 * Constructs an ItemStack, possibly of a custom 
+	 * item contained by the specified inventory saver, 
+	 * out of a serialized item string.
 	 * 
 	 * @param string Serialized item string
+	 * @param inventorySaver the InventorySaver instance which contains custom items
 	 * @return Deserialized item
 	 */
-	public static ItemStack deserialize(String string) {
+	public static ItemStack deserialize(String string, InventorySaver inventorySaver) {
 		if (string.equals("")) {
 			return null;
 		}
@@ -52,6 +54,14 @@ public class SavedItem {
 		final int damage = Integer.valueOf(arguments.get("d"));
 		final Map<Enchantment,Integer> enchantments = new HashMap<>();
 		
+		if (inventorySaver != null) {
+			final ItemStack customItem = inventorySaver.getCustomItem(displayName);
+			
+			if (customItem != null) {
+				return customItem;
+			}
+		}
+		
 		final String enchantmentsString = arguments.get("e");
 		String[] enchantmentKeyIdPairs = new String[0];
 		
@@ -78,6 +88,17 @@ public class SavedItem {
 		constructedItemStack.addEnchantments(enchantments);
 		
 		return constructedItemStack;
+	}
+	
+	/**
+	 * Constructs an ItemStack out of a serialized
+	 * item string.
+	 * 
+	 * @param string Serialized item string
+	 * @return Deserialized item
+	 */
+	public static ItemStack deserialize(String string) {
+		return deserialize(string, null);
 	}
 	
 	/**

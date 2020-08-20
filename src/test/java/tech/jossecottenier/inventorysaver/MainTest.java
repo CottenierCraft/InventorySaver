@@ -43,4 +43,13 @@ public class MainTest {
 		assertEquals(configFile.getPath(), plugin.getDataFolder() + File.separator + "config.yml");
 	}
 	
+	@Test
+	public void replacesDefaultInventorySaver() {
+		final InventorySaver newInventorySaver = new InventorySaver();
+		newInventorySaver.addCustomItem(Randomizer.createRandomCustomItem());
+		
+		plugin.setDefaultInventorySaver(newInventorySaver);
+		assertEquals(plugin.getDefaultInventorySaver(), newInventorySaver);
+	}
+	
 }

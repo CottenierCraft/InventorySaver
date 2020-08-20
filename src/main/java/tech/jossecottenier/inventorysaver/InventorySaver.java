@@ -2,6 +2,9 @@ package tech.jossecottenier.inventorysaver;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 import org.bukkit.World;
 import org.bukkit.command.Command;
@@ -21,6 +24,52 @@ import org.bukkit.plugin.java.JavaPlugin;
 import net.md_5.bungee.api.ChatColor;
 
 public class InventorySaver implements Listener,CommandExecutor {
+	private final List<ItemStack> customItems;
+	
+	public InventorySaver() {
+		this.customItems = new ArrayList<>();
+	}
+	
+	/**
+	 * Adds an ItemStack to the list of custom items
+	 * which will be replaced by their ItemStack
+	 * if the ItemStack name and their saved name
+	 * match
+	 * 
+	 * @param customItem Custom item to add
+	 */
+	public void addCustomItem(ItemStack customItem) {
+		customItems.add(customItem);
+	}
+	
+	/**
+	 * Removes an ItemStack from the list of custom items
+	 * which will be replaced by their ItemStack
+	 * if the ItemStack name and their saved name match
+	 * 
+	 * @param customItem
+	 * @return Whether or not the custom item was in the list.
+	 */
+	public boolean removeCustomItem(ItemStack customItem) {
+		return customItems.remove(customItem);
+	}
+	
+	/**
+	 * Returns the custom item which display
+	 * name matches with the specified name
+	 * or null if there is no such custom item
+	 * registered.
+	 * 
+	 * @param name Name with which the custom item should match
+	 * @return Custom item's ItemStack if there is a match, null if not.
+	 */
+	public ItemStack getCustomItem(String name) {
+		final List<ItemStack> customItemMatches = customItems
+				.stream()
+				.filter(itemStack->itemStack.getItemMeta().getDisplayName().equals(name))
+				.collect(Collectors.toList());
+		return customItemMatches.size() > 0 ? customItemMatches.get(0) : null;
+	}
 	
 	/**
 	 * Gets the inventory file in a specified plugin namespace
@@ -144,7 +193,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 		final ItemStack[] inventoryContents = new ItemStack[serializedItems.length];
 		
 		for (int i = 0; i < serializedItems.length; i++) {
-			inventoryContents[i] = SavedItem.deserialize(serializedItems[i]);
+			inventoryContents[i] = SavedItem.deserialize(serializedItems[i], this);
 		}
 		
 		return inventoryContents;
@@ -205,7 +254,33 @@ public class InventorySaver implements Listener,CommandExecutor {
 		return loadInventoryContents(player, player.getWorld());
 	}
 	
-	protected void onTeleport(PlayerTeleportEvent event, JavaPlugin plugin) {
+	/**
+	 * Sets the default inventory saver
+	 * which loads/saves inventories
+	 * when players join/leave worlds
+	 * listed in the config.yml
+	 * from a specified plugin
+	 * 
+	 * @param inventorySaver InventorySaver to which the default InventorySaver will be set
+	 * @param plugin Plugin which default InventorySaver will be overwritten
+	 */
+	protected static void setDefaultInventorySaver(InventorySaver inventorySaver, Main plugin) {
+		plugin.setDefaultInventorySaver(inventorySaver);
+	}
+	
+	/**
+	 * Sets the default inventory saver
+	 * which loads/saves inventories
+	 * when players join/leave worlds
+	 * listed in the config.yml
+	 * 
+	 * @param inventorySaver
+	 */
+	public static void setDefaultInventorySaver(InventorySaver inventorySaver) {
+		setDefaultInventorySaver(inventorySaver, Main.instance);
+	}
+	
+	protected void onTeleport(PlayerTeleportEvent event, Main plugin) {
 		final Player player = event.getPlayer();
 		final World from = event.getFrom().getWorld();
 		final World to = event.getTo().getWorld();
@@ -218,7 +293,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 		
 		// From an uncontrolled world to a controlled world
 		if (!ControlledWorlds.getWorlds().contains(from) && ControlledWorlds.getWorlds().contains(to)) {
-			final ItemStack[] contents = loadInventoryContents(player, to);
+			final ItemStack[] contents = plugin.getDefaultInventorySaver().loadInventoryContents(player, to);
 			player.getInventory().setContents(contents);
 			return;
 		}
@@ -267,5 +342,25 @@ public class InventorySaver implements Listener,CommandExecutor {
 		}
 		
 		return true;
+	}
+	
+	@Override
+	public boolean equals(Object other) {
+		if (this == other) {
+			return true;
+		}
+		
+		if (!(other instanceof InventorySaver)) {
+			return false;
+		}
+		
+		final InventorySaver otherInventorySaver = (InventorySaver)other;
+		
+		return this.customItems.equals(otherInventorySaver.customItems);
+	}
+	
+	@Override
+	public String toString() {
+		return String.format("InventorySaver{customItems=%s}", customItems.toString());
 	}
 }
