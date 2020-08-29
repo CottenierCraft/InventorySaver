@@ -1,11 +1,7 @@
 package tech.jossecottenier.inventorysaver;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -13,18 +9,22 @@ import org.bukkit.Material;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.craftbukkit.libs.org.apache.commons.lang3.ArrayUtils;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import be.seeseemelk.mockbukkit.MockBukkit;
 import be.seeseemelk.mockbukkit.ServerMock;
 import be.seeseemelk.mockbukkit.WorldMock;
 import be.seeseemelk.mockbukkit.entity.PlayerMock;
+
+import static org.junit.Assert.*;
 
 public class InventorySaverTest {
 	private ServerMock server;
@@ -98,6 +98,10 @@ public class InventorySaverTest {
 		}
 		
 		return originalWithCorrectLength;
+	}
+
+	private ItemStack[] appendNullToMatchLength(ItemStack[] original) {
+		return appendNullToMatchLength(original, 41);
 	}
 	
 	private Map<String,ItemStack[]> getLoadedInventoryAndLoadedSerialization(PlayerMock player) {
@@ -231,6 +235,23 @@ public class InventorySaverTest {
 		final ItemStack[] loadedInventoryContents = firstPlayer.getInventory().getContents();
 		
 		assertArrayEquals(loadedInventoryContents, appendNullToMatchLength(inventoryContents, loadedInventoryContents.length));
+	}
+
+	@Test
+	public void inventoryDoesNotLoadWhenTeleportedOnJoin() {
+		// Teleporting to controlled world and quitting
+		firstPlayer.teleport(controlledWorldMock.getSpawnLocation());
+		server.getOnlinePlayers().remove(firstPlayer);
+		inventorySaver.onQuit(new PlayerQuitEvent(firstPlayer, null), plugin);
+
+		firstPlayer.getInventory().clear();
+
+		server.addPlayer(firstPlayer);
+		// Immediately teleporting (simulating teleport on join)
+		firstPlayer.teleport(notControlledWorldMock.getSpawnLocation());
+		final ItemStack[] newInventoryContents = firstPlayer.getInventory().getContents();
+
+		assertArrayEquals(new ItemStack[41], newInventoryContents);
 	}
 	
 	@Test

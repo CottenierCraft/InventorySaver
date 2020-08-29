@@ -2,8 +2,7 @@ package tech.jossecottenier.inventorysaver;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.bukkit.World;
@@ -15,6 +14,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerTeleportEvent;
 import org.bukkit.inventory.Inventory;
@@ -25,9 +25,11 @@ import net.md_5.bungee.api.ChatColor;
 
 public class InventorySaver implements Listener,CommandExecutor {
 	private final List<ItemStack> customItems;
+	private final Map<UUID,Long> joinTimes;
 	
 	public InventorySaver() {
 		this.customItems = new ArrayList<>();
+		this.joinTimes = new HashMap<>();
 	}
 	
 	/**
@@ -47,7 +49,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * which will be replaced by their ItemStack
 	 * if the ItemStack name and their saved name match
 	 * 
-	 * @param customItem
+	 * @param customItem The custom item to be removed.
 	 * @return Whether or not the custom item was in the list.
 	 */
 	public boolean removeCustomItem(ItemStack customItem) {
@@ -73,10 +75,10 @@ public class InventorySaver implements Listener,CommandExecutor {
 	
 	/**
 	 * Gets the inventory file in a specified plugin namespace
-	 * from the players world, in which the serialized player 
-	 * inventories of that world are stored.
+	 * from a specified world, in which the serialized player
+	 * inventories are stored.
 	 * 
-	 * @param player Player whose world's inventory file to get
+	 * @param world Player whose world's inventory file to get
 	 * @param plugin Plugin in which namespace the file should be searched
 	 * @return Player's world's inventory file
 	 */
@@ -93,18 +95,6 @@ public class InventorySaver implements Listener,CommandExecutor {
 	}
 	
 	/**
-	 * Gets the inventory file from the players world, 
-	 * in which the serialized player 
-	 * inventories of that world are stored.
-	 * 
-	 * @param player Player whose world's inventory file to get
-	 * @return Player's world's inventory file
-	 */
-	private File getWorldInventoryFile(World world) {
-		return getWorldInventoryFile(world, Main.instance);
-	}
-	
-	/**
 	 * Serializes a specified inventory
 	 * to a efficiently storable string.
 	 * 
@@ -112,17 +102,17 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * @return Serialized string of the player's inventory
 	 */
 	public String serializeInventory(Inventory inventory) {
-		String serialization = "";
+		StringBuilder serialization = new StringBuilder();
 		final ItemStack[] inventoryContents = inventory.getContents();
 		
 		for (ItemStack item : inventoryContents) {
-			serialization += new SavedItem(item).serialize() + "-";
+			serialization.append(new SavedItem(item).serialize()).append("-");
 		}
 		
 		// Remove end minus sign
-		serialization = serialization.substring(0, serialization.length() - 1);
+		serialization = new StringBuilder(serialization.substring(0, serialization.length() - 1));
 		
-		return serialization;
+		return serialization.toString();
 	}
 	
 	/**
@@ -137,7 +127,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 		if (world == null) {
 			world = player.getWorld();
 		}
-		final File file = getWorldInventoryFile(world);
+		final File file = getWorldInventoryFile(world, plugin);
 		final FileConfiguration configuration = YamlConfiguration.loadConfiguration(file);
 		
 		configuration.set(player.getName(), serializeInventory(player.getInventory()));
@@ -152,8 +142,8 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * Serializes a player's inventory to a string and saves
 	 * it to the player's world's inventory file in the specified
 	 * plugin's namespace
-	 * @param player
-	 * @param plugin
+	 * @param player Player whose inventory should be saved.
+	 * @param plugin Plugin in which namespace the inventory should be saved.
 	 */
 	protected void saveInventory(Player player, JavaPlugin plugin) {
 		saveInventory(player, player.getWorld(), plugin);
@@ -174,7 +164,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * Serializes a player's inventory to a string and saves
 	 * it to the player's world's inventory file
 	 * 
-	 * @param player
+	 * @param player Player whose inventory to save.
 	 */
 	public void saveInventory(Player player) {
 		saveInventory(player, player.getWorld());
@@ -223,7 +213,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * 
 	 * @param player Player whose saved inventory is to be loaded
 	 * @param world The world from which inventory file the inventory should be loaded.
-	 * @return
+	 * @return The loaded inventory contents.
 	 */
 	public ItemStack[] loadInventoryContents(Player player, World world) {
 		return loadInventoryContents(player, world, Main.instance);
@@ -248,7 +238,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * to an ItemStack array
 	 * 
 	 * @param player Player whose saved inventory is to be loaded
-	 * @return
+	 * @return The loaded inventory contents.
 	 */
 	public ItemStack[] loadInventoryContents(Player player) {
 		return loadInventoryContents(player, player.getWorld());
@@ -274,16 +264,29 @@ public class InventorySaver implements Listener,CommandExecutor {
 	 * when players join/leave worlds
 	 * listed in the config.yml
 	 * 
-	 * @param inventorySaver
+	 * @param inventorySaver The inventorySaver instance to which the default will be set.
 	 */
 	public static void setDefaultInventorySaver(InventorySaver inventorySaver) {
 		setDefaultInventorySaver(inventorySaver, Main.instance);
 	}
+
+	@EventHandler
+	public void onJoin(PlayerJoinEvent event) {
+		joinTimes.put(event.getPlayer().getUniqueId(), System.currentTimeMillis());
+	}
 	
 	protected void onTeleport(PlayerTeleportEvent event, Main plugin) {
 		final Player player = event.getPlayer();
+		// Default joinTime to 0 (if something goes wrong in the join event, just load)
+		final long joinTime = joinTimes.getOrDefault(player.getUniqueId(), 0l);
 		final World from = event.getFrom().getWorld();
 		final World to = event.getTo().getWorld();
+
+		System.out.println(System.currentTimeMillis() - joinTime);
+		// Don't load or save inventories if players get teleported within 50ms from join
+		if ((System.currentTimeMillis() - joinTime) < 50) {
+			return;
+		}
 		
 		// From a controlled world to an uncontrolled world
 		if (ControlledWorlds.getWorlds().contains(from) && !ControlledWorlds.getWorlds().contains(to)) {
@@ -295,7 +298,6 @@ public class InventorySaver implements Listener,CommandExecutor {
 		if (!ControlledWorlds.getWorlds().contains(from) && ControlledWorlds.getWorlds().contains(to)) {
 			final ItemStack[] contents = plugin.getDefaultInventorySaver().loadInventoryContents(player, to);
 			player.getInventory().setContents(contents);
-			return;
 		}
 	}
 	
@@ -306,7 +308,7 @@ public class InventorySaver implements Listener,CommandExecutor {
 	
 	protected void onQuit(PlayerQuitEvent event, JavaPlugin plugin) {
 		if (ControlledWorlds.getWorlds().contains(event.getPlayer().getWorld())) {
-			saveInventory(event.getPlayer(), plugin);
+			Main.instance.getDefaultInventorySaver().saveInventory(event.getPlayer(), plugin);
 		}
 	}
 	
