@@ -62,6 +62,6 @@ InventorySaver.setDefaultInventorySaver(<new InventorySaver instance>);
 
 ## Help and contributions
 
-This project is pretty much written on a holiday and is not meant to become popular in any means, but this naturally does not exclude your possibility of helping out and helping it reach its fullest potential. Therefore, pull requests are welcome and even encouraged, and I will always be happy to be contacted.
+This project is pretty much written on a holiday and is not meant to become popular by any means, but this naturally does not exclude your possibility of helping out and helping it reach its fullest potential. Therefore, pull requests are welcome and even encouraged, and I will always be happy to be contacted.
 
 - Josse
